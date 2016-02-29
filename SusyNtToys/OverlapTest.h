@@ -7,6 +7,9 @@
 #include "SusyNtuple/SusyNtTools.h"
 
 // ROOT
+class TH1F;
+class TCanvas;
+class TPad;
 
 // std/stl
 #include <vector>
@@ -26,6 +29,9 @@ class OverlapTest : public SusyNtAna
         int numberOR() { return m_numberOR; }
 
         void clearORContainers();
+        ElectronVector& ORElectrons(int ORprocedure);
+        MuonVector& ORMuons(int ORprocedure);
+        JetVector& ORJets(int ORprocedure);
 
         // basic event cleaning
         bool passEventCleaning();
@@ -38,35 +44,80 @@ class OverlapTest : public SusyNtAna
 
         // TSelector Methods
         virtual void Begin(TTree *tree);
+        virtual void Init(TTree *tree);
         virtual Bool_t Process(Long64_t entry);
         virtual void Terminate();
 
         // OVERLAP METHODS
-        void performOverlap(ElectronVector& electrons, MuonVector& muons, JetVector& jets,
-                            bool doBoostedLepton,
-                            bool removeCaloMuons,
-                            bool muonJetGhost,
-                            bool eleBJet,
-                            bool muoBJet);
-
+        void performOverlap(ElectronVector& electrons, MuonVector& muons,
+                            JetVector& jets);
         void ele_muon_overlap(ElectronVector& electrons, MuonVector& muons);
-        void m_e_overlap(MuonVector& muons, ElectronVector& electrons); // calo tagging
-        void e_m_overlap(ElectronVector& electrons, MuonVector& muons);
         void jet_electron_overlap(ElectronVector& electrons, JetVector& jets);
-        void j_e_overlap(ElectronVector& electrons, JetVector& jets, double dR = 0.2, bool doBJetOR = true);
-        void e_j_overlap(ElectronVector& electrons, JetVector& jets, double dR = 0.4, bool doBoosted = false);
         void jet_muon_overlap(MuonVector& muons, JetVector& jets);
-        void j_m_overlap(JetVector& jets, MuonVector& muons, double dR = 0.2, bool doBJetOR = true, bool doGhost = true);
-        void m_j_overlap(MuonVector& muons, JetVector& jets, double dR = 0.4, bool doBoosted = false);
+
+        // OR from n0220
+        void performOldOverlap(ElectronVector& electrons, MuonVector& muons,
+                            JetVector& jets);
+
+
+        // Set the OR configuration
+        void setORConfig(bool doBoosted, bool removeCaloMuons,
+                         bool muonJetGhost, bool eleBJet,
+                         bool muoBJet, bool useJVT);
         
+        bool doBoostedLepton() { return m_boostedLepton; }
+        bool removeCaloMuons() { return m_removeCaloMuons; }
+        bool doMuonJetGhost() { return m_muonJetGhost; }
+        bool doEleBJet() { return m_eleBJet; }
+        bool doMuoBJet() { return m_muoBJet; }
+        bool useJVT() { return m_useJVT; }
+
+        // b-tagging stuff
+        bool passBVeto(JetVector& jets);
+
+        void printState(int proc);
+        void printBVetoInfo();
+
+
+        ////////////////////////////////////////////
+        // HISTOGRAMS
+        ////////////////////////////////////////////
+        TH1F* m_orHisto;
+        TCanvas* m_canvas;
+        TPad* m_upper;
+        TPad* m_lower;
+
+        void setPadDimensions();
+        void drawHisto();
 
     protected :
         bool m_dbg;
-        int m_numberOR; /// number of baseline container copies (i.e. number of different OR procecdures)
+        bool do_or_output;
+        int n_denom;
+        int n_nom_passBVeto;
+        std::vector<int> m_passBVeto;
+        /**
+            number of baseline container copies
+            (i.e. number of different OR procedures)
+        */
+        int m_numberOR;
+        int m_orConfig;
+
+        /**
+            configuration toggles
+        */
+        bool m_boostedLepton;
+        bool m_removeCaloMuons;
+        bool m_muonJetGhost;
+        bool m_eleBJet;
+        bool m_muoBJet;
+        bool m_useJVT;
 
         std::vector<ElectronVector>     m_orElectrons;
         std::vector<MuonVector>         m_orMuons;
         std::vector<JetVector>          m_orJets;
+
+        std::vector<int>                m_lepsAtStage;
 
 
 }; // end class
